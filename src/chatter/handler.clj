@@ -5,7 +5,8 @@
             [ring.adapter.jetty :as jetty]
             [hiccup.page :as page]
             [hiccup.form :as form]
-            [ring.middleware.params :refer [wrap-params]]))
+            [ring.middleware.params :refer [wrap-params]])
+(:gen-class))
 
 (def chat-messages
      (atom [{:name "blue" :message "blue's first post"}
