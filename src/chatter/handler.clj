@@ -2,34 +2,46 @@
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
-            [hiccup.page :as page]))
+            [hiccup.page :as page]
+            [hiccup.form :as form]
+            [ring.middleware.params :refer [wrap-params]]))
+
+(def chat-messages
+     (atom [{:name "blue" :message "blue's first post"}
+            {:name "red" :message "red is my favorite color"}
+            {:name "green" :message "green makes it go faster"}]))
 
 (defn generate-message-view
   "This generates the HTML for displaying messages"
-  []
+  [messages]
   (page/html5
     [:head
       [:title "chatter"]]
     [:body
-      [:h1 "Our Chat App"]]))
+      [:h1 "Our Chat App"]
+      [:p
+        (form/form-to
+          [:post "/"]
+          "Name: " (form/text-field "name")
+          "Message: " (form/text-field "msg")
+          (form/submit-button "submit"))]
+      [:p
+        [:table
+          (map (fn [m] [:tr [:td (:name m)] [:td (:message m)]]) messages)]]]))
+
+(defn update-messages!
+  "This will update a message list atom"
+  [messages name message]
+  (swap! messages conj  {:name name :message message}))
 
 (defroutes app-routes
-  (GET "/" []
-    (generate-message-view))
+  (GET "/" [] (generate-message-view @chat-messages))
+  (POST "/" {params :params}
+    (let [name-param (get params "name")
+          msg-param (get params "msg")
+          new-messages (update-messages! chat-messages name-param msg-param)]
+      (generate-message-view new-messages)
+      ))
   (route/not-found "Not Found"))
 
-(def app
-  (wrap-defaults app-routes site-defaults))
-
-(defn generate-message-view
-  "This generates the HTML for displaying messages"
-  []
-  (page/html5
-   [:head
-    [:title "chatter"]]
-   [:body
-    [:h1 "Our Chat App"]]))
-
-(defroutes app-routes
-  (GET "/" [] (generate-message-view))
-  (route/not-found "Not Found"))
+(def app (wrap-params app-routes))
